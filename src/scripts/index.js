@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "lil-gui";
+import { generateGalaxy } from "./galaxy";
 
 /**
  * Base
@@ -19,14 +20,12 @@ const scene = new THREE.Scene();
  */
 const parameters = {
   count: 1000,
+  size: 0.02,
+};
 
-}
+const galaxy = generateGalaxy(parameters.count, parameters.size);
 
-const generateGalaxy = () => {
-  const galaxyGeometry = new THREE.BufferGeometry();
-}
-
-generateGalaxy();
+scene.add(galaxy);
 /**
  * Sizes
  */
@@ -67,6 +66,8 @@ scene.add(camera);
 // Controls
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
+
+// Debugging
 
 /**
  * Renderer
