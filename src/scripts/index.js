@@ -1,13 +1,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import * as dat from "lil-gui";
+import { makeGUI } from "./debugging";
 // import { generateGalaxy } from "./galaxy";
 
 /**
  * Base
  */
-// Debug
-const gui = new dat.GUI();
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -19,9 +17,15 @@ const scene = new THREE.Scene();
  * Galaxy
  */
 const parameters = {
-  count: 1000,
-  size: 0.02,
-  radius: 3,
+  count: 100000,
+  size: 0.01,
+  radius: 5,
+  branches: 3,
+  spin: 1,
+  randomness: 0.2,
+  randomnessPower: 3,
+  insideColor: 0xff6030,
+  outsideColor: 0x1b3984,
 };
 
 let points = null;
@@ -32,7 +36,7 @@ const generateGalaxy = () => {
    * Geometry
    */
 
-  if(points !== null) {
+  if (points !== null) {
     material.dispose();
     galaxyGeometry.dispose();
     scene.remove(points);
@@ -41,16 +45,47 @@ const generateGalaxy = () => {
   galaxyGeometry = new THREE.BufferGeometry();
 
   const positions = new Float32Array(parameters.count * 3);
+  const colors = new Float32Array(parameters.count * 3);
+
+  const colorInside = new THREE.Color(parameters.insideColor);
+  const colorOutside = new THREE.Color(parameters.outsideColor);
+
   for (let i = 0; i < parameters.count; i++) {
     const i3 = i * 3;
+// Position
+    const radius = Math.random() * parameters.radius;
+    const branchAngle =
+      ((i % parameters.branches) / parameters.branches) * Math.PI * 2;
+    const spinAngle = radius * parameters.spin;
     // fill three at a time to reduce amount of times we loop.
-    positions[i3] = (Math.random() - 0.5) * parameters.radius;
-    positions[i3 + 1] = (Math.random() - 0.5) * parameters.radius;
-    positions[i3 + 2] = (Math.random() - 0.5) * parameters.radius;
+    const randomX =
+      Math.pow(Math.random(), parameters.randomnessPower) *
+      (Math.random() < 0.5 ? -1 : 1);
+    const randomY =
+      Math.pow(Math.random(), parameters.randomnessPower) *
+      (Math.random() < 0.5 ? -1 : 1);
+    const randomZ =
+      Math.pow(Math.random(), parameters.randomnessPower) *
+      (Math.random() < 0.5 ? -1 : 1);
+    positions[i3] = Math.cos(branchAngle + spinAngle) * radius + randomX;
+    positions[i3 + 1] = randomY;
+    positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+    // Color
+    const mixedColor = colorInside.clone();
+    mixedColor.lerp(colorOutside, radius / parameters.radius);
+
+    colors[i3] = mixedColor.r
+    colors[i3 + 1] = mixedColor.g
+    colors[i3 + 2] = mixedColor.b
   }
   galaxyGeometry.setAttribute(
     "position",
     new THREE.BufferAttribute(positions, 3)
+  );
+  galaxyGeometry.setAttribute(
+    "color",
+    new THREE.BufferAttribute(colors, 3)
   );
   /**
    * Material
@@ -60,15 +95,14 @@ const generateGalaxy = () => {
     sizeAttenuation: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-
-  })
+    vertexColors: true,
+  });
 
   /**
    * Points
    */
   points = new THREE.Points(galaxyGeometry, material);
   scene.add(points);
-
 };
 generateGalaxy();
 /**
@@ -113,23 +147,7 @@ const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 
 // Debugging
-gui.add(parameters, "count")
-  .min(100)
-  .max(10000)
-  .step(100)
-  .onFinishChange(generateGalaxy);
-gui.add(parameters, "radius")
-  .min(3)
-  .max(25)
-  .step(0.01)
-  .name("Galaxy size")
-  .onFinishChange(generateGalaxy);
-gui.add(parameters, "size")
-  .min(0)
-  .max(2)
-  .step(0.01)
-  .name("Star size")
-  .onFinishChange(generateGalaxy);
+makeGUI(parameters, { generateGalaxy });
 /**
  * Renderer
  */
