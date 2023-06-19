@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as dat from "lil-gui";
-import { generateGalaxy } from "./galaxy";
+// import { generateGalaxy } from "./galaxy";
 
 /**
  * Base
@@ -21,11 +21,56 @@ const scene = new THREE.Scene();
 const parameters = {
   count: 1000,
   size: 0.02,
+  radius: 3,
 };
 
-const galaxy = generateGalaxy(parameters.count, parameters.size);
+let points = null;
+let galaxyGeometry = null;
+let material = null;
+const generateGalaxy = () => {
+  /**
+   * Geometry
+   */
 
-scene.add(galaxy);
+  if(points !== null) {
+    material.dispose();
+    galaxyGeometry.dispose();
+    scene.remove(points);
+  }
+
+  galaxyGeometry = new THREE.BufferGeometry();
+
+  const positions = new Float32Array(parameters.count * 3);
+  for (let i = 0; i < parameters.count; i++) {
+    const i3 = i * 3;
+    // fill three at a time to reduce amount of times we loop.
+    positions[i3] = (Math.random() - 0.5) * parameters.radius;
+    positions[i3 + 1] = (Math.random() - 0.5) * parameters.radius;
+    positions[i3 + 2] = (Math.random() - 0.5) * parameters.radius;
+  }
+  galaxyGeometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(positions, 3)
+  );
+  /**
+   * Material
+   */
+  material = new THREE.PointsMaterial({
+    size: parameters.size,
+    sizeAttenuation: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+
+  })
+
+  /**
+   * Points
+   */
+  points = new THREE.Points(galaxyGeometry, material);
+  scene.add(points);
+
+};
+generateGalaxy();
 /**
  * Sizes
  */
@@ -68,7 +113,23 @@ const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 
 // Debugging
-
+gui.add(parameters, "count")
+  .min(100)
+  .max(10000)
+  .step(100)
+  .onFinishChange(generateGalaxy);
+gui.add(parameters, "radius")
+  .min(3)
+  .max(25)
+  .step(0.01)
+  .name("Galaxy size")
+  .onFinishChange(generateGalaxy);
+gui.add(parameters, "size")
+  .min(0)
+  .max(2)
+  .step(0.01)
+  .name("Star size")
+  .onFinishChange(generateGalaxy);
 /**
  * Renderer
  */
