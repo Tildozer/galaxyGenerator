@@ -18,8 +18,8 @@ export const makeGUI = (parameters, callbacks) => {
   gui
     .add(parameters, "size")
     .min(0)
-    .max(2)
-    .step(0.01)
+    .max(0.03)
+    .step(0.001)
     .name("Star size")
     .onFinishChange(callbacks.generateGalaxy);
   gui
